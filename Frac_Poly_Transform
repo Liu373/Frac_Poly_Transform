@@ -226,3 +226,71 @@ if __name__ == '__main__':
     LoanAge_Transform = FracPoly_Transform(parameter, groupbin, term, range1, range2, DF_CRE_FL_Train)
     
     zz_RMSE_Summary = LoanAge_Transform.main()
+
+
+
+
+
+
+
+
+
+# %% [3] Draw Graph
+
+
+zz_Temp_10 = DF_CRE_FL_Train.copy()
+
+
+zz_Temp_10['CLTV_<=0.8_1'] = np.where(zz_Temp_10['CurrentLTV'] <= 0.8, 1/zz_Temp_10['CurrentLTV'], 0)
+zz_Temp_10['CLTV_<=0.8_2'] = np.where(zz_Temp_10['CurrentLTV'] <= 0.8, np.log(zz_Temp_10['CurrentLTV']) * 1/zz_Temp_10['CurrentLTV'], 0)
+
+zz_Temp_10['CLTV_>0.8_1'] = np.where(zz_Temp_10['CurrentLTV'] > 0.8, (np.log(zz_Temp_10['CurrentLTV'])**2) * 1/zz_Temp_10['CurrentLTV'], 0)
+zz_Temp_10['CLTV_>0.8_2'] = np.where(zz_Temp_10['CurrentLTV'] > 0.8, 1/(zz_Temp_10['CurrentLTV']**(1/2)), 0)
+
+
+Var_1 = [
+         'CLTV_<=0.8_1',
+         'CLTV_<=0.8_2',
+         'CLTV_>0.8_1',
+         'CLTV_>0.8_2'
+         ]
+
+
+Var_2 = []
+
+
+vars_to_use = Var_1 + Var_2
+Train_x = zz_Temp_10[vars_to_use]
+Train_x_Const = sm.add_constant(Train_x)
+Train_Y = zz_Temp_10['LGD_Rate_Adj']
+
+Train_Weight = zz_Temp_10["OutstandingPrincipal_0"]
+
+Model_Result = sm.GLM(Train_Y, Train_x_Const, family=sm.families.Binomial(), freq_weights=Train_Weight).fit()
+
+zz_Temp_10['Pred_LGD'] = Model_Result.predict(Train_x_Const)
+zz_Temp_10['Pred_Loss_Amt'] = zz_Temp_10['Pred_LGD'] * zz_Temp_10["OutstandingPrincipal_0"]
+
+zz_Temp_11_Agg = zz_Temp_10.groupby(groupbin)[["NetWOFF_Adj", "Pred_Loss_Amt", "OutstandingPrincipal_0"]].sum()
+
+zz_Temp_11_Agg["LGD_Actual"] = zz_Temp_11_Agg["NetWOFF_Adj"] / zz_Temp_11_Agg["OutstandingPrincipal_0"]
+zz_Temp_11_Agg["LGD_Pred"] = zz_Temp_11_Agg["Pred_Loss_Amt"] / zz_Temp_11_Agg["OutstandingPrincipal_0"]
+
+
+
+
+fig, ax1 = plt.subplots(figsize=(10, 6))
+
+ax2 = ax1.twinx()
+zz_Temp_11_Agg["LGD_Actual"].plot(kind='line', color='orange', ax=ax2)
+zz_Temp_11_Agg["LGD_Pred"].plot(kind='line', linestyle='--', color='green', ax=ax2)
+
+ticks = ax1.xaxis.get_ticklocs()
+ticklabels = [l.get_text() for l in ax1.xaxis.get_ticklabels()]
+ax1.xaxis.set_ticks(ticks[::3])
+ax1.xaxis.set_ticklabels(ticklabels[::3])
+
+plt.xticks(rotation=90)
+plt.show()
+
+
