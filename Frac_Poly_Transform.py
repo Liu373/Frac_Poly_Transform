@@ -209,7 +209,7 @@ class FracPoly_Transform:
 
 if __name__ == '__main__':
     
-    Location_CRE_FL_Train = r"C:\Users\jliu85\OneDrive - BMO Financial Group\Documents\00_ModelDevelopment\01_SAS_Script\PREPAYMENT\CRE\04_MEV\02_Model_Fitting\00_Archive\CRE_PREPAYMENT_FL_Temp_1.csv"
+    Location_CRE_FL_Train = r"C:\CRE_PREPAYMENT_FL_Temp_1.csv"
     DF_CRE_FL_Train = pd.read_csv(Location_CRE_FL_Train, low_memory=False)
     
     parameter = 'LOANAGE'
